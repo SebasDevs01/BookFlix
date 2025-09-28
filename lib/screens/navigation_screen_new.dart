@@ -31,7 +31,7 @@ class _NavigationScreenState extends State<NavigationScreen>
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: 1);
+    _pageController = PageController(initialPage: 1); // Comienza en Home
 
     _fabAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -43,6 +43,7 @@ class _NavigationScreenState extends State<NavigationScreen>
       curve: Curves.easeInOut,
     );
 
+    // Iniciar animación del FAB
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         _fabAnimationController.forward();
@@ -103,6 +104,7 @@ class _NavigationScreenState extends State<NavigationScreen>
 
     return Stack(
       children: [
+        // Scaffold principal
         Scaffold(
           body: Consumer<AppProvider>(
             builder: (context, appProvider, child) {
@@ -164,7 +166,9 @@ class _NavigationScreenState extends State<NavigationScreen>
           floatingActionButton: Stack(
             alignment: Alignment.bottomRight,
             children: [
+              // Botones de opciones flotantes (más grandes y más cerca)
               if (_showFloatingOptions) ...[
+                // Botón para Libros
                 Positioned(
                   bottom: 75,
                   right: 8,
@@ -183,6 +187,7 @@ class _NavigationScreenState extends State<NavigationScreen>
                     ),
                   ),
                 ),
+                // Botón para Películas
                 Positioned(
                   bottom: 145,
                   right: 8,
@@ -202,6 +207,7 @@ class _NavigationScreenState extends State<NavigationScreen>
                   ),
                 ),
               ],
+              // Botón principal (más grande)
               ScaleTransition(
                 scale: _fabAnimation,
                 child: SizedBox(
@@ -222,6 +228,7 @@ class _NavigationScreenState extends State<NavigationScreen>
             ],
           ),
         ),
+        // Overlay que cubre TODA la pantalla incluyendo el menú inferior
         if (_showFloatingOptions)
           Positioned.fill(
             child: IgnorePointer(
