@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # BookFlix 📚🎬
 
 **Tu biblioteca personal para libros y películas**
