@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # BookFlix 📚🎬
 
 **Tu biblioteca personal para libros y películas**
@@ -223,3 +224,7 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 ---
 
 **¡Disfruta organizando tu biblioteca personal con BookFlix!** 📚✨
+=======
+# BookFlix
+Aplicacion de streming basado en gustos y preferencias del usuario (Peliculas y Libros)
+>>>>>>> 0931ff27e519c3576681936fae551aba7ca9e05d
