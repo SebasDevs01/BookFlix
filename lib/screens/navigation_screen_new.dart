@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import 'library/library_screen.dart';
-import 'home/new_home_screen.dart' as new_home;
+import 'home/home_screen.dart';
 import 'favorites/favorites_screen.dart';
 import 'search/book_search_screen.dart';
 import 'search/movie_search_screen.dart';
@@ -24,7 +24,7 @@ class _NavigationScreenState extends State<NavigationScreen>
 
   final List<Widget> _screens = [
     const LibraryScreen(),
-    const new_home.HomeScreen(),
+    const HomeScreen(),
     const FavoritesScreen(),
   ];
 
@@ -174,13 +174,25 @@ class _NavigationScreenState extends State<NavigationScreen>
                   right: 8,
                   child: ScaleTransition(
                     scale: _fabAnimation,
-                    child: SizedBox(
+                    child: Container(
                       width: 64,
                       height: 64,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF3B82F6),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 6,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
                       child: FloatingActionButton(
                         heroTag: "books",
-                        backgroundColor: Colors.blue,
+                        backgroundColor: const Color(0xFF3B82F6),
                         foregroundColor: Colors.white,
+                        elevation: 0,
                         onPressed: () => _handleOptionTap('books'),
                         child: const Icon(Icons.book, size: 30),
                       ),
@@ -193,13 +205,25 @@ class _NavigationScreenState extends State<NavigationScreen>
                   right: 8,
                   child: ScaleTransition(
                     scale: _fabAnimation,
-                    child: SizedBox(
+                    child: Container(
                       width: 64,
                       height: 64,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF3B82F6),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 6,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
                       child: FloatingActionButton(
                         heroTag: "movies",
-                        backgroundColor: Colors.red,
+                        backgroundColor: const Color(0xFF3B82F6),
                         foregroundColor: Colors.white,
+                        elevation: 0,
                         onPressed: () => _handleOptionTap('movies'),
                         child: const Icon(Icons.movie, size: 30),
                       ),
@@ -210,17 +234,26 @@ class _NavigationScreenState extends State<NavigationScreen>
               // Botón principal (más grande)
               ScaleTransition(
                 scale: _fabAnimation,
-                child: SizedBox(
-                  width: 64,
-                  height: 64,
-                  child: FloatingActionButton(
-                    heroTag: "main",
-                    backgroundColor: theme.primaryColor,
-                    foregroundColor: Colors.white,
-                    onPressed: _toggleFloatingOptions,
+                child: GestureDetector(
+                  onTap: _toggleFloatingOptions,
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF3B82F6),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 8,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
                     child: Icon(
                       _showFloatingOptions ? Icons.close : Icons.add,
                       size: 32,
+                      color: Colors.white,
                     ),
                   ),
                 ),

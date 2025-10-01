@@ -87,7 +87,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             child: Text(
               'Guardar',
               style: TextStyle(
-                color: theme.colorScheme.primary,
+                color: const Color(0xFF3B82F6),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -143,7 +143,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: Icon(
                 Icons.person,
                 size: isTablet ? 60 : 50,
-                color: theme.colorScheme.primary,
+                color: const Color(0xFF3B82F6),
               ),
             ),
             Positioned(
@@ -151,7 +151,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               right: 0,
               child: Container(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
+                  color: const Color(0xFF3B82F6),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
@@ -188,7 +188,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         Text(
           'Cambiar foto de perfil',
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.primary,
+            color: const Color(0xFF3B82F6),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -369,7 +369,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         children: [
           Row(
             children: [
-              Icon(icon, color: theme.colorScheme.primary, size: 24),
+              Icon(icon, color: const Color(0xFF3B82F6), size: 24),
               const SizedBox(width: 12),
               Text(
                 title,
@@ -399,10 +399,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: theme.colorScheme.primary,
+          backgroundColor: const Color(0xFF3B82F6),
           foregroundColor: Colors.white,
           elevation: 4,
-          shadowColor: theme.colorScheme.primary.withValues(alpha: 0.3),
+          shadowColor: const Color(0xFF3B82F6).withValues(alpha: 0.3),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_provider.dart';
+import '../../data/hardcoded_data.dart';
+import '../../models/simple_book_model.dart';
+import '../../models/simple_movie_model.dart';
+import '../../models/simple_series_model.dart';
+import '../details/book_detail_screen.dart';
+import '../details/movie_detail_screen.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -15,610 +21,911 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   bool get wantKeepAlive => true;
 
   late TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  // Obtener libros y películas favoritos usando el provider
+  List<SimpleBookModel> get _favoriteBooks {
+    final provider = context.watch<AppProvider>();
+    return HardcodedData.books
+        .where((book) => provider.isSimpleBookFavorite(book.id))
+        .toList();
+  }
+
+  List<SimpleMovieModel> get _favoriteMovies {
+    final provider = context.watch<AppProvider>();
+    return HardcodedData.movies
+        .where((movie) => provider.isSimpleMovieFavorite(movie.id))
+        .toList();
+  }
+
+  List<SimpleSeriesModel> get _favoriteSeries {
+    final provider = context.watch<AppProvider>();
+    return HardcodedData.series
+        .where((series) => provider.isSimpleSeriesFavorite(series.id))
+        .toList();
+  }
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  List<SimpleBookModel> _getFilteredBooks() {
+    if (_searchQuery.isEmpty) return _favoriteBooks;
+
+    return _favoriteBooks
+        .where(
+          (book) =>
+              book.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              book.author.toLowerCase().contains(_searchQuery.toLowerCase()),
+        )
+        .toList();
+  }
+
+  List<SimpleMovieModel> _getFilteredMovies() {
+    if (_searchQuery.isEmpty) return _favoriteMovies;
+
+    return _favoriteMovies
+        .where(
+          (movie) =>
+              movie.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              movie.director.toLowerCase().contains(_searchQuery.toLowerCase()),
+        )
+        .toList();
+  }
+
+  List<SimpleSeriesModel> _getFilteredSeries() {
+    if (_searchQuery.isEmpty) return _favoriteSeries;
+
+    return _favoriteSeries
+        .where(
+          (series) =>
+              series.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              series.creator.toLowerCase().contains(_searchQuery.toLowerCase()),
+        )
+        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final theme = Theme.of(context);
+    final filteredBooks = _getFilteredBooks();
+    final filteredMovies = _getFilteredMovies();
+    final filteredSeries = _getFilteredSeries();
+    final totalFavorites =
+        filteredBooks.length + filteredMovies.length + filteredSeries.length;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth >= 800;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      body: Consumer<AppProvider>(
-        builder: (context, appProvider, child) {
-          return NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) => [
-              SliverAppBar(
-                expandedHeight: 120,
-                pinned: true,
-                backgroundColor: theme.colorScheme.surface,
-                elevation: 0,
-                flexibleSpace: FlexibleSpaceBar(
-                  title: Text(
-                    'Tus Favoritos',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: NestedScrollView(
+        physics: const BouncingScrollPhysics(),
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              expandedHeight: 200.0,
+              floating: false,
+              pinned: true,
+              elevation: 0,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: isDarkMode
+                          ? [Colors.grey[900]!, Colors.black]
+                          : [Colors.white, Colors.grey[50]!],
                     ),
                   ),
-                  centerTitle: true,
-                  titlePadding: const EdgeInsets.only(bottom: 16),
+                  child: SafeArea(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isLargeScreen ? 40 : 20,
+                        vertical: 20,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 10),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Mis Favoritos',
+                                      style: TextStyle(
+                                        fontSize: isLargeScreen ? 28 : 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(
+                                          context,
+                                        ).textTheme.headlineLarge?.color,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '$totalFavorites elementos guardados',
+                                      style: TextStyle(
+                                        fontSize: isLargeScreen ? 16 : 14,
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.color
+                                            ?.withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF3B82F6,
+                                  ).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(50),
+                                ),
+                                child: Icon(
+                                  Icons.favorite,
+                                  color: const Color(0xFF3B82F6),
+                                  size: isLargeScreen ? 28 : 24,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: isLargeScreen ? 16 : 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDarkMode
+                                  ? Colors.grey[800]
+                                  : Colors.grey[100],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.search,
+                                  color: isDarkMode
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _searchController,
+                                    decoration: InputDecoration(
+                                      hintText: 'Buscar en favoritos...',
+                                      hintStyle: TextStyle(
+                                        color: isDarkMode
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
+                                        fontSize: isLargeScreen ? 18 : 16,
+                                      ),
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: isLargeScreen ? 18 : 16,
+                                      color: Theme.of(
+                                        context,
+                                      ).textTheme.bodyLarge?.color,
+                                    ),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _searchQuery = value;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-                actions: [
-                  IconButton(
-                    icon: Icon(Icons.favorite, color: Colors.red),
-                    onPressed: () {},
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                bottom: TabBar(
-                  controller: _tabController,
-                  labelColor: theme.colorScheme.primary,
-                  unselectedLabelColor: theme.colorScheme.onSurface.withValues(
-                    alpha: 0.6,
-                  ),
-                  indicatorColor: theme.colorScheme.primary,
-                  labelStyle: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  tabs: [
-                    Tab(
-                      icon: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.book),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '${appProvider.favoriteBooks.length}',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      text: 'Libros',
+              ),
+            ),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _FavoritesTabBarDelegate(
+                child: Container(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  child: Container(
+                    margin: EdgeInsets.symmetric(
+                      horizontal: isLargeScreen ? 40 : 20,
+                      vertical: 10,
                     ),
-                    Tab(
-                      icon: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.movie),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.secondary,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '${appProvider.favoriteMovies.length}',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
+                    child: TabBar(
+                      controller: _tabController,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      indicator: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF3B82F6), Color(0xFF3B82F6)],
+                        ),
+                        borderRadius: BorderRadius.circular(25),
                       ),
-                      text: 'Películas',
+                      dividerColor: Colors.transparent,
+                      labelColor: Colors.white,
+                      unselectedLabelColor: isDarkMode
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
+                      labelStyle: TextStyle(
+                        fontSize: isLargeScreen ? 16 : 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      unselectedLabelStyle: TextStyle(
+                        fontSize: isLargeScreen ? 16 : 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      tabs: [
+                        Tab(
+                          icon: Icon(Icons.apps, size: isLargeScreen ? 24 : 18),
+                          text: 'Todos ($totalFavorites)',
+                        ),
+                        Tab(
+                          icon: Icon(Icons.book, size: isLargeScreen ? 24 : 18),
+                          text: 'Libros (${filteredBooks.length})',
+                        ),
+                        Tab(
+                          icon: Icon(
+                            Icons.movie,
+                            size: isLargeScreen ? 24 : 18,
+                          ),
+                          text: 'Películas (${filteredMovies.length})',
+                        ),
+                        Tab(
+                          icon: Icon(Icons.tv, size: isLargeScreen ? 24 : 18),
+                          text: 'Series (${filteredSeries.length})',
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                ),
+              ),
+            ),
+          ];
+        },
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildAllFavorites(
+              isLargeScreen,
+              filteredBooks,
+              filteredMovies,
+              filteredSeries,
+            ),
+            _buildBooksTab(),
+            _buildMoviesTab(),
+            _buildSeriesTab(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAllFavorites(
+    bool isLargeScreen,
+    List<SimpleBookModel> filteredBooks,
+    List<SimpleMovieModel> filteredMovies,
+    List<SimpleSeriesModel> filteredSeries,
+  ) {
+    if (filteredBooks.isEmpty &&
+        filteredMovies.isEmpty &&
+        filteredSeries.isEmpty) {
+      return _buildEmptyState('No tienes favoritos', Icons.favorite_border);
+    }
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(isLargeScreen ? 40 : 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (filteredBooks.isNotEmpty) ...[
+            _buildSectionHeader('Libros', Icons.book, filteredBooks.length),
+            const SizedBox(height: 16),
+            _buildBooksGrid(filteredBooks, isLargeScreen),
+            const SizedBox(height: 32),
+          ],
+          if (filteredMovies.isNotEmpty) ...[
+            _buildSectionHeader(
+              'Películas',
+              Icons.movie,
+              filteredMovies.length,
+            ),
+            const SizedBox(height: 16),
+            _buildMoviesGrid(filteredMovies, isLargeScreen),
+            if (filteredSeries.isNotEmpty) const SizedBox(height: 32),
+          ],
+          if (filteredSeries.isNotEmpty) ...[
+            _buildSectionHeader('Series', Icons.tv, filteredSeries.length),
+            const SizedBox(height: 16),
+            _buildSeriesGrid(filteredSeries, isLargeScreen),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBooksTab() {
+    final filteredBooks = _getFilteredBooks();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth >= 800;
+
+    if (filteredBooks.isEmpty) {
+      return _buildEmptyState('No hay libros favoritos', Icons.book);
+    }
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(isLargeScreen ? 40 : 20),
+      child: _buildBooksGrid(filteredBooks, isLargeScreen),
+    );
+  }
+
+  Widget _buildMoviesTab() {
+    final filteredMovies = _getFilteredMovies();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth >= 800;
+
+    if (filteredMovies.isEmpty) {
+      return _buildEmptyState('No hay películas favoritas', Icons.movie);
+    }
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(isLargeScreen ? 40 : 20),
+      child: _buildMoviesGrid(filteredMovies, isLargeScreen),
+    );
+  }
+
+  Widget _buildSeriesTab() {
+    final filteredSeries = _getFilteredSeries();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth >= 800;
+
+    if (filteredSeries.isEmpty) {
+      return _buildEmptyState('No hay series favoritas', Icons.tv);
+    }
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(isLargeScreen ? 40 : 20),
+      child: _buildSeriesGrid(filteredSeries, isLargeScreen),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon, int count) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.blue.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: const Color(0xFF3B82F6), size: 20),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          '$title ($count)',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBooksGrid(List<SimpleBookModel> books, bool isLargeScreen) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: isLargeScreen ? 6 : 3,
+        childAspectRatio: 0.7,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+      ),
+      itemCount: books.length,
+      itemBuilder: (context, index) {
+        final book = books[index];
+        return _buildBookCard(book, isLargeScreen);
+      },
+    );
+  }
+
+  Widget _buildMoviesGrid(List<SimpleMovieModel> movies, bool isLargeScreen) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: isLargeScreen ? 4 : 2,
+        childAspectRatio: 0.7,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+      ),
+      itemCount: movies.length,
+      itemBuilder: (context, index) {
+        final movie = movies[index];
+        return _buildMovieCard(movie, isLargeScreen);
+      },
+    );
+  }
+
+  Widget _buildSeriesGrid(List<SimpleSeriesModel> series, bool isLargeScreen) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: isLargeScreen ? 4 : 2,
+        childAspectRatio: 0.7,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+      ),
+      itemCount: series.length,
+      itemBuilder: (context, index) {
+        final seriesItem = series[index];
+        return _buildSeriesCard(seriesItem, isLargeScreen);
+      },
+    );
+  }
+
+  Widget _buildBookCard(SimpleBookModel book, bool isLargeScreen) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => BookDetailScreen(book: book)),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                height: double.infinity,
+                child: Image.asset(
+                  book.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF48c6ef), Color(0xFF6f86d6)],
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.book,
+                        size: 50,
+                        color: Colors.white,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: GestureDetector(
+                  onTap: () {
+                    final provider = context.read<AppProvider>();
+                    provider.toggleSimpleBookFavorite(book.id);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(
+                      Icons.favorite,
+                      color: Colors.blue,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.7),
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        book.title,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isLargeScreen ? 14 : 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        book.author,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: isLargeScreen ? 12 : 10,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
-            body: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildFavoriteBooksTab(appProvider, theme),
-                _buildFavoriteMoviesTab(appProvider, theme),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildFavoriteBooksTab(AppProvider appProvider, ThemeData theme) {
-    final favoriteBooks = appProvider.favoriteBooks;
-
-    if (favoriteBooks.isEmpty) {
-      return _buildEmptyState(
-        '¡No hay libros favoritos aún!',
-        'Marca tus libros como favoritos tocando el corazón en la biblioteca',
-        Icons.book_outlined,
-        theme,
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header con estadísticas
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary.withValues(alpha: 0.1),
-                  theme.colorScheme.primary.withValues(alpha: 0.05),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: theme.colorScheme.primary.withValues(alpha: 0.2),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(Icons.favorite, color: Colors.white, size: 24),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Libros Favoritos',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${favoriteBooks.length} libro${favoriteBooks.length != 1 ? 's' : ''} en tu lista',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.7,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
           ),
-          const SizedBox(height: 20),
-
-          // Lista de libros favoritos
-          Expanded(
-            child: ListView.builder(
-              itemCount: favoriteBooks.length,
-              itemBuilder: (context, index) {
-                final book = favoriteBooks[index];
-                return _buildFavoriteBookItem(book, appProvider, theme);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFavoriteMoviesTab(AppProvider appProvider, ThemeData theme) {
-    final favoriteMovies = appProvider.favoriteMovies;
-
-    if (favoriteMovies.isEmpty) {
-      return _buildEmptyState(
-        '¡No hay películas favoritas aún!',
-        'Marca tus películas como favoritas tocando el corazón en la biblioteca',
-        Icons.movie_outlined,
-        theme,
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header con estadísticas
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.secondary.withValues(alpha: 0.1),
-                  theme.colorScheme.secondary.withValues(alpha: 0.05),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: theme.colorScheme.secondary.withValues(alpha: 0.2),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.secondary,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(Icons.favorite, color: Colors.white, size: 24),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Películas Favoritas',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${favoriteMovies.length} película${favoriteMovies.length != 1 ? 's' : ''} en tu lista',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.7,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Lista de películas favoritas
-          Expanded(
-            child: ListView.builder(
-              itemCount: favoriteMovies.length,
-              itemBuilder: (context, index) {
-                final movie = favoriteMovies[index];
-                return _buildFavoriteMovieItem(movie, appProvider, theme);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFavoriteBookItem(
-    dynamic book,
-    AppProvider appProvider,
-    ThemeData theme,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            // Portada del libro
-            Container(
-              width: 60,
-              height: 80,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: book.coverImageUrl != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        book.coverImageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(
-                            Icons.book,
-                            size: 30,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          );
-                        },
-                      ),
-                    )
-                  : Icon(
-                      Icons.book,
-                      size: 30,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-            ),
-            const SizedBox(width: 16),
-
-            // Información del libro
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    book.title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    book.author,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          book.genre,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (book.rating > 0) ...[
-                        Icon(Icons.star, size: 16, color: Colors.amber),
-                        const SizedBox(width: 4),
-                        Text(
-                          book.rating.toString(),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Botón de favorito
-            IconButton(
-              icon: Icon(Icons.favorite, color: Colors.red, size: 24),
-              onPressed: () {
-                appProvider.toggleBookFavorite(book.id);
-              },
-            ),
-          ],
         ),
       ),
     );
   }
 
-  Widget _buildFavoriteMovieItem(
-    dynamic movie,
-    AppProvider appProvider,
-    ThemeData theme,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+  Widget _buildMovieCard(SimpleMovieModel movie, bool isLargeScreen) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MovieDetailScreen(movie: movie),
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            // Póster de la película
-            Container(
-              width: 60,
-              height: 80,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: movie.posterUrl != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        movie.posterUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(
-                            Icons.movie,
-                            size: 30,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          );
-                        },
-                      ),
-                    )
-                  : Icon(
-                      Icons.movie,
-                      size: 30,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-            ),
-            const SizedBox(width: 16),
-
-            // Información de la película
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    movie.title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    movie.director,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          movie.genre,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSecondaryContainer,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (movie.rating > 0) ...[
-                        Icon(Icons.star, size: 16, color: Colors.amber),
-                        const SizedBox(width: 4),
-                        Text(
-                          movie.rating.toString(),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Botón de favorito
-            IconButton(
-              icon: Icon(Icons.favorite, color: Colors.red, size: 24),
-              onPressed: () {
-                appProvider.toggleMovieFavorite(movie.id);
-              },
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
             ),
           ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                height: double.infinity,
+                child: Image.asset(
+                  movie.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF48c6ef), Color(0xFF6f86d6)],
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.movie,
+                        size: 50,
+                        color: Colors.white,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: GestureDetector(
+                  onTap: () {
+                    final provider = context.read<AppProvider>();
+                    provider.toggleSimpleMovieFavorite(movie.id);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(
+                      Icons.favorite,
+                      color: Colors.blue,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.7),
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        movie.title,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isLargeScreen ? 14 : 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        movie.director,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: isLargeScreen ? 12 : 10,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState(
-    String title,
-    String message,
-    IconData icon,
-    ThemeData theme,
-  ) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
+  Widget _buildSeriesCard(SimpleSeriesModel series, bool isLargeScreen) {
+    return GestureDetector(
+      onTap: () {
+        // TODO: Navegar a pantalla de detalles de series cuando se implemente
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Detalles de "${series.title}" próximamente'),
+            backgroundColor: const Color(0xFF3B82F6),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                height: double.infinity,
+                child: series.imageUrl.isNotEmpty
+                    ? Image.network(
+                        series.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildDefaultSeriesCover(series.title);
+                        },
+                      )
+                    : _buildDefaultSeriesCover(series.title),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: GestureDetector(
+                  onTap: () {
+                    final provider = context.read<AppProvider>();
+                    provider.toggleSimpleSeriesFavorite(series.id);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(
+                      Icons.favorite,
+                      color: Color(0xFF3B82F6),
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.7),
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        series.title,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isLargeScreen ? 14 : 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${series.seasons} temporadas • ${series.totalEpisodes} episodios',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: isLargeScreen ? 12 : 10,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDefaultSeriesCover(String title) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF48c6ef), Color(0xFF6f86d6)],
+        ),
+      ),
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.3,
+            const Icon(Icons.tv, size: 48, color: Colors.white),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
                 ),
-                shape: BoxShape.circle,
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
-              child: Icon(
-                icon,
-                size: 64,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              title,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                height: 1.4,
-              ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildEmptyState(String message, IconData icon) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 80, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Agrega elementos a favoritos para verlos aquí',
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FavoritesTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+
+  _FavoritesTabBarDelegate({required this.child});
+
+  @override
+  double get minExtent => 70;
+
+  @override
+  double get maxExtent => 70;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
+    return false;
   }
 }

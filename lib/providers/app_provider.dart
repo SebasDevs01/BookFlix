@@ -64,6 +64,7 @@ class AppProvider extends ChangeNotifier {
       await _initHive();
       await _loadUserData();
       await _loadSettings();
+      await _loadFavoritesAndLibrarySimple();
       clearError();
     } catch (e) {
       setError('Error al inicializar la aplicación: $e');
@@ -348,6 +349,150 @@ class AppProvider extends ChangeNotifier {
     return stats;
   }
 
+  // Funcionalidad de favoritos para libros simples (datos hardcoded)
+  List<String> _favoriteBookIds = ['1', '2', '5']; // IDs por defecto
+  List<String> _favoriteMovieIds = ['1', '2', '5', '8']; // IDs por defecto
+  List<String> _favoriteSeriesIds = ['s1', 's3', 's5']; // IDs por defecto
+  List<String> _libraryBookIds = [
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+  ]; // IDs por defecto
+  List<String> _libraryMovieIds = ['1', '2', '3', '4']; // IDs por defecto
+  List<String> _librarySeriesIds = ['s1', 's2']; // IDs por defecto
+
+  List<String> get favoriteBookIds => _favoriteBookIds;
+  List<String> get favoriteMovieIds => _favoriteMovieIds;
+  List<String> get favoriteSeriesIds => _favoriteSeriesIds;
+  List<String> get libraryBookIds => _libraryBookIds;
+  List<String> get libraryMovieIds => _libraryMovieIds;
+  List<String> get librarySeriesIds => _librarySeriesIds;
+
+  void toggleSimpleBookFavorite(String bookId) {
+    if (_favoriteBookIds.contains(bookId)) {
+      _favoriteBookIds.remove(bookId);
+    } else {
+      _favoriteBookIds.add(bookId);
+    }
+    _saveFavoritesSimple();
+    notifyListeners();
+  }
+
+  void toggleSimpleSeriesFavorite(String seriesId) {
+    if (_favoriteSeriesIds.contains(seriesId)) {
+      _favoriteSeriesIds.remove(seriesId);
+    } else {
+      _favoriteSeriesIds.add(seriesId);
+    }
+    _saveFavoritesSimple();
+    notifyListeners();
+  }
+
+  void toggleSimpleMovieFavorite(String movieId) {
+    if (_favoriteMovieIds.contains(movieId)) {
+      _favoriteMovieIds.remove(movieId);
+    } else {
+      _favoriteMovieIds.add(movieId);
+    }
+    _saveFavoritesSimple();
+    notifyListeners();
+  }
+
+  void toggleSimpleBookInLibrary(String bookId) {
+    if (_libraryBookIds.contains(bookId)) {
+      _libraryBookIds.remove(bookId);
+    } else {
+      _libraryBookIds.add(bookId);
+    }
+    _saveLibrarySimple();
+    notifyListeners();
+  }
+
+  void toggleSimpleMovieInLibrary(String movieId) {
+    if (_libraryMovieIds.contains(movieId)) {
+      _libraryMovieIds.remove(movieId);
+    } else {
+      _libraryMovieIds.add(movieId);
+    }
+    _saveLibrarySimple();
+    notifyListeners();
+  }
+
+  void toggleSimpleSeriesInLibrary(String seriesId) {
+    if (_librarySeriesIds.contains(seriesId)) {
+      _librarySeriesIds.remove(seriesId);
+    } else {
+      _librarySeriesIds.add(seriesId);
+    }
+    _saveLibrarySimple();
+    notifyListeners();
+  }
+
+  bool isSimpleBookFavorite(String bookId) => _favoriteBookIds.contains(bookId);
+  bool isSimpleMovieFavorite(String movieId) =>
+      _favoriteMovieIds.contains(movieId);
+  bool isSimpleSeriesFavorite(String seriesId) =>
+      _favoriteSeriesIds.contains(seriesId);
+  bool isSimpleBookInLibrary(String bookId) => _libraryBookIds.contains(bookId);
+  bool isSimpleMovieInLibrary(String movieId) =>
+      _libraryMovieIds.contains(movieId);
+  bool isSimpleSeriesInLibrary(String seriesId) =>
+      _librarySeriesIds.contains(seriesId);
+
+  Future<void> _saveFavoritesSimple() async {
+    await _settingsBox?.put('favoriteBookIds', _favoriteBookIds);
+    await _settingsBox?.put('favoriteMovieIds', _favoriteMovieIds);
+    await _settingsBox?.put('favoriteSeriesIds', _favoriteSeriesIds);
+  }
+
+  Future<void> _saveLibrarySimple() async {
+    await _settingsBox?.put('libraryBookIds', _libraryBookIds);
+    await _settingsBox?.put('libraryMovieIds', _libraryMovieIds);
+    await _settingsBox?.put('librarySeriesIds', _librarySeriesIds);
+  }
+
+  Future<void> _loadFavoritesAndLibrarySimple() async {
+    _favoriteBookIds = List<String>.from(
+      _settingsBox?.get('favoriteBookIds', defaultValue: ['1', '2', '5']) ??
+          ['1', '2', '5'],
+    );
+    _favoriteMovieIds = List<String>.from(
+      _settingsBox?.get(
+            'favoriteMovieIds',
+            defaultValue: ['1', '2', '5', '8'],
+          ) ??
+          ['1', '2', '5', '8'],
+    );
+    _favoriteSeriesIds = List<String>.from(
+      _settingsBox?.get(
+            'favoriteSeriesIds',
+            defaultValue: ['s1', 's3', 's5'],
+          ) ??
+          ['s1', 's3', 's5'],
+    );
+    _libraryBookIds = List<String>.from(
+      _settingsBox?.get(
+            'libraryBookIds',
+            defaultValue: ['1', '2', '3', '4', '5', '6'],
+          ) ??
+          ['1', '2', '3', '4', '5', '6'],
+    );
+    _libraryMovieIds = List<String>.from(
+      _settingsBox?.get(
+            'libraryMovieIds',
+            defaultValue: ['1', '2', '3', '4'],
+          ) ??
+          ['1', '2', '3', '4'],
+    );
+    _librarySeriesIds = List<String>.from(
+      _settingsBox?.get('librarySeriesIds', defaultValue: ['s1', 's2']) ??
+          ['s1', 's2'],
+    );
+  }
+
   // Utilidades
   void setLoading(bool loading) {
     if (_isLoading != loading) {
@@ -366,6 +511,54 @@ class AppProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
     }
+  }
+
+  // Cerrar sesión
+  void logout() {
+    _currentUser = null;
+    _books.clear();
+    _movies.clear();
+    _selectedGenres.clear();
+    _currentIndex = 1;
+    _showGenreSelection = false;
+
+    // Limpiar datos de Hive (opcional, mantener configuraciones)
+    _userBox?.clear();
+    _booksBox?.clear();
+    _moviesBox?.clear();
+
+    notifyListeners();
+  }
+
+  // Métodos de recomendación basados en géneros seleccionados
+  List<T> getRecommendationsByGenre<T>(
+    List<T> items,
+    String Function(T) getGenre, {
+    int limit = 10,
+  }) {
+    if (_selectedGenres.isEmpty) {
+      return items.take(limit).toList();
+    }
+
+    // Primero, buscar elementos que coincidan exactamente con los géneros seleccionados
+    final exactMatches = items.where((item) {
+      final itemGenre = getGenre(item);
+      return _selectedGenres.any(
+        (selectedGenre) =>
+            itemGenre.toLowerCase().contains(selectedGenre.toLowerCase()) ||
+            selectedGenre.toLowerCase().contains(itemGenre.toLowerCase()),
+      );
+    }).toList();
+
+    // Si no hay suficientes coincidencias exactas, agregar elementos aleatorios
+    if (exactMatches.length < limit) {
+      final remaining = items
+          .where((item) => !exactMatches.contains(item))
+          .toList();
+      exactMatches.addAll(remaining.take(limit - exactMatches.length));
+    }
+
+    return exactMatches.take(limit).toList();
   }
 
   @override

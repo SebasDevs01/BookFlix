@@ -9,6 +9,7 @@ import 'screens/new_genre_selection_screen.dart';
 import 'screens/navigation_screen.dart';
 import 'screens/search/book_search_screen.dart';
 import 'screens/search/movie_search_screen.dart';
+import 'screens/profile/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,6 +68,7 @@ class BookFlixApp extends StatelessWidget {
               '/navigation': (context) => const NavigationScreen(),
               '/book-search': (context) => const BookSearchScreen(),
               '/movie-search': (context) => const MovieSearchScreen(),
+              '/profile': (context) => const ProfileScreen(),
             },
           );
         },

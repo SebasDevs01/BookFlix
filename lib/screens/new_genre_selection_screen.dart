@@ -14,6 +14,7 @@ class _GenreSelectionScreenState extends State<GenreSelectionScreen>
   // Selected genres
   final Set<String> _selectedBookGenres = <String>{};
   final Set<String> _selectedMovieGenres = <String>{};
+  final Set<String> _selectedSeriesGenres = <String>{};
 
   // Available genres for books
   final List<String> _bookGenres = [
@@ -53,10 +54,29 @@ class _GenreSelectionScreenState extends State<GenreSelectionScreen>
     'Crimen',
   ];
 
+  // Available genres for series
+  final List<String> _seriesGenres = [
+    'Drama',
+    'Comedia',
+    'Acción',
+    'Thriller',
+    'Ciencia ficción',
+    'Fantasía',
+    'Horror',
+    'Romance',
+    'Crimen',
+    'Misterio',
+    'Documental',
+    'Animación',
+    'Aventura',
+    'Historia',
+    'Musical',
+  ];
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -85,7 +105,7 @@ class _GenreSelectionScreenState extends State<GenreSelectionScreen>
                 '¡Personaliza tu experiencia!',
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: theme.primaryColor,
+                  color: const Color(0xFF3B82F6),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -113,7 +133,7 @@ class _GenreSelectionScreenState extends State<GenreSelectionScreen>
                   dividerColor: Colors.transparent,
                   indicatorSize: TabBarIndicatorSize.tab,
                   indicator: BoxDecoration(
-                    color: theme.primaryColor,
+                    color: const Color(0xFF3B82F6),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   labelColor: Colors.white,
@@ -173,6 +193,33 @@ class _GenreSelectionScreenState extends State<GenreSelectionScreen>
                         ],
                       ),
                     ),
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.tv, size: 20),
+                          const SizedBox(width: 8),
+                          const Text('Series'),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _selectedSeriesGenres.isEmpty
+                                  ? theme.disabledColor
+                                  : Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${_selectedSeriesGenres.length}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -186,6 +233,7 @@ class _GenreSelectionScreenState extends State<GenreSelectionScreen>
                   children: [
                     _buildBookGenresTab(theme),
                     _buildMovieGenresTab(theme),
+                    _buildSeriesGenresTab(theme),
                   ],
                 ),
               ),
@@ -219,7 +267,7 @@ class _GenreSelectionScreenState extends State<GenreSelectionScreen>
                           ? _continueWithPreferences
                           : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.primaryColor,
+                        backgroundColor: const Color(0xFF3B82F6),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -282,11 +330,13 @@ class _GenreSelectionScreenState extends State<GenreSelectionScreen>
                 },
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isSelected ? theme.primaryColor : theme.cardColor,
+                    color: isSelected
+                        ? const Color(0xFF3B82F6)
+                        : theme.cardColor,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected
-                          ? theme.primaryColor
+                          ? const Color(0xFF3B82F6)
                           : theme.dividerColor,
                       width: 2,
                     ),
@@ -348,11 +398,81 @@ class _GenreSelectionScreenState extends State<GenreSelectionScreen>
                 },
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isSelected ? theme.primaryColor : theme.cardColor,
+                    color: isSelected
+                        ? const Color(0xFF3B82F6)
+                        : theme.cardColor,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected
-                          ? theme.primaryColor
+                          ? const Color(0xFF3B82F6)
+                          : theme.dividerColor,
+                      width: 2,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      genre,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: isSelected
+                            ? Colors.white
+                            : theme.textTheme.bodyMedium?.color,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSeriesGenresTab(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Selecciona tus géneros de series favoritos',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: GridView.builder(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 3.5,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: _seriesGenres.length,
+            itemBuilder: (context, index) {
+              final genre = _seriesGenres[index];
+              final isSelected = _selectedSeriesGenres.contains(genre);
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    if (isSelected) {
+                      _selectedSeriesGenres.remove(genre);
+                    } else {
+                      _selectedSeriesGenres.add(genre);
+                    }
+                  });
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFF3B82F6)
+                        : theme.cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFF3B82F6)
                           : theme.dividerColor,
                       width: 2,
                     ),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_provider.dart';
 import '../../data/hardcoded_data.dart';
@@ -9,7 +9,6 @@ import '../details/movie_detail_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
-
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
 }
@@ -18,29 +17,13 @@ class _LibraryScreenState extends State<LibraryScreen>
     with AutomaticKeepAliveClientMixin, TickerProviderStateMixin {
   @override
   bool get wantKeepAlive => true;
-
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  bool _isSearching = false;
-
-  // Simulamos libros y películas guardados en la biblioteca
-  final List<SimpleBookModel> _savedBooks = HardcodedData.books
-      .take(6)
-      .toList();
-  final List<SimpleMovieModel> _savedMovies = HardcodedData.movies
-      .take(4)
-      .toList();
-
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text;
-      });
-    });
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -50,230 +33,363 @@ class _LibraryScreenState extends State<LibraryScreen>
     super.dispose();
   }
 
+  List<SimpleBookModel> get _libraryBooks {
+    final provider = context.watch<AppProvider>();
+    return HardcodedData.books
+        .where((book) => provider.isSimpleBookInLibrary(book.id))
+        .toList();
+  }
+
+  List<SimpleMovieModel> get _libraryMovies {
+    final provider = context.watch<AppProvider>();
+    return HardcodedData.movies
+        .where((movie) => provider.isSimpleMovieInLibrary(movie.id))
+        .toList();
+  }
+
+  List<SimpleBookModel> get _filteredBooks {
+    if (_searchQuery.isEmpty) return _libraryBooks;
+    return _libraryBooks
+        .where(
+          (book) =>
+              book.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              book.author.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              book.genre.toLowerCase().contains(_searchQuery.toLowerCase()),
+        )
+        .toList();
+  }
+
+  List<SimpleMovieModel> get _filteredMovies {
+    if (_searchQuery.isEmpty) return _libraryMovies;
+    return _libraryMovies
+        .where(
+          (movie) =>
+              movie.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              movie.director.toLowerCase().contains(
+                _searchQuery.toLowerCase(),
+              ) ||
+              movie.genre.toLowerCase().contains(_searchQuery.toLowerCase()),
+        )
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final theme = Theme.of(context);
-
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth >= 800;
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      body: Consumer<AppProvider>(
-        builder: (context, appProvider, child) {
-          return NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) => [
-              SliverAppBar(
-                expandedHeight: 160,
-                pinned: true,
-                backgroundColor: theme.colorScheme.surface,
-                elevation: 0,
-                flexibleSpace: FlexibleSpaceBar(
-                  title: Text(
-                    'Mi Biblioteca',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
+      backgroundColor: isDark ? Colors.black : Colors.white,
+      body: NestedScrollView(
+        physics: const BouncingScrollPhysics(),
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              expandedHeight: 200.0,
+              floating: false,
+              pinned: true,
+              elevation: 0,
+              backgroundColor: isDark ? Colors.black : Colors.white,
+              foregroundColor: isDark ? Colors.white : Colors.black,
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: isDark
+                          ? [Colors.grey[900]!, Colors.black]
+                          : [Colors.white, Colors.grey[50]!],
                     ),
                   ),
-                  centerTitle: true,
-                  titlePadding: const EdgeInsets.only(bottom: 16),
-                ),
-                actions: [
-                  IconButton(
-                    icon: Icon(
-                      _isSearching ? Icons.close : Icons.search,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _isSearching = !_isSearching;
-                        if (!_isSearching) {
-                          _searchController.clear();
-                          _searchQuery = '';
-                        }
-                      });
-                    },
-                  ),
-                  PopupMenuButton<String>(
-                    icon: Icon(Icons.sort, color: theme.colorScheme.onSurface),
-                    onSelected: (value) {
-                      // Sorting functionality to be implemented based on user preference
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Ordenando por $value')),
-                      );
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'title',
-                        child: Text('Ordenar por título'),
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 20,
                       ),
-                      const PopupMenuItem(
-                        value: 'date',
-                        child: Text('Ordenar por fecha'),
-                      ),
-                      const PopupMenuItem(
-                        value: 'rating',
-                        child: Text('Ordenar por calificación'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                bottom: _isSearching
-                    ? PreferredSize(
-                        preferredSize: const Size.fromHeight(60),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: TextField(
-                            controller: _searchController,
-                            autofocus: true,
-                            decoration: InputDecoration(
-                              hintText: 'Buscar libros o películas...',
-                              prefixIcon: const Icon(Icons.search),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 10),
+                          // Header con título y descripción
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Título y descripción
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Mi Biblioteca',
+                                      style: TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(
+                                          context,
+                                        ).textTheme.headlineLarge?.color,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Tu colección personal',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.color
+                                            ?.withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              filled: true,
-                              fillColor:
-                                  theme.colorScheme.surfaceContainerHighest,
+                              // Icono de biblioteca
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF3B82F6,
+                                  ).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(50),
+                                ),
+                                child: const Icon(
+                                  Icons.library_books,
+                                  color: Color(0xFF3B82F6),
+                                  size: 28,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          // Barra de búsqueda unificada
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.grey[800]
+                                  : Colors.grey[100],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.search,
+                                  color: isDark
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _searchController,
+                                    decoration: InputDecoration(
+                                      hintText: 'Buscar en mi biblioteca...',
+                                      hintStyle: TextStyle(
+                                        color: isDark
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
+                                        fontSize: isLargeScreen ? 18 : 16,
+                                      ),
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: isLargeScreen ? 18 : 16,
+                                      color: Theme.of(
+                                        context,
+                                      ).textTheme.bodyLarge?.color,
+                                    ),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _searchQuery = value;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      )
-                    : TabBar(
-                        controller: _tabController,
-                        labelColor: theme.colorScheme.primary,
-                        unselectedLabelColor: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.6),
-                        indicatorColor: theme.colorScheme.primary,
-                        labelStyle: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        tabs: const [
-                          Tab(icon: Icon(Icons.book), text: 'Libros'),
-                          Tab(icon: Icon(Icons.movie), text: 'Películas'),
                         ],
                       ),
+                    ),
+                  ),
+                ),
               ),
-            ],
-            body: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildBooksTab(appProvider, theme),
-                _buildMoviesTab(appProvider, theme),
-              ],
             ),
-          );
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _TabBarDelegate(
+                TabBar(
+                  controller: _tabController,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicator: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF3B82F6), Color(0xFF3B82F6)],
+                    ),
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  dividerColor: Colors.transparent,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: isDark
+                      ? Colors.grey[400]
+                      : Colors.grey[600],
+                  labelStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  tabs: const [
+                    Tab(icon: Icon(Icons.book, size: 18), text: 'Libros'),
+                    Tab(icon: Icon(Icons.movie, size: 18), text: 'Películas'),
+                    Tab(icon: Icon(Icons.tv, size: 18), text: 'Series'),
+                  ],
+                ),
+                isDark,
+              ),
+            ),
+          ];
         },
+        body: TabBarView(
+          controller: _tabController,
+          children: [_buildBooksTab(), _buildMoviesTab(), _buildSeriesTab()],
+        ),
       ),
     );
   }
 
-  Widget _buildBooksTab(AppProvider appProvider, ThemeData theme) {
-    List<SimpleBookModel> books = _searchQuery.isEmpty
-        ? _savedBooks
-        : _savedBooks
-              .where(
-                (book) =>
-                    book.title.toLowerCase().contains(
-                      _searchQuery.toLowerCase(),
-                    ) ||
-                    book.author.toLowerCase().contains(
-                      _searchQuery.toLowerCase(),
-                    ),
-              )
-              .toList();
-
+  Widget _buildBooksTab() {
+    final books = _filteredBooks;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (books.isEmpty) {
       return _buildEmptyState(
-        'No hay libros',
-        _searchQuery.isEmpty
-            ? 'Agrega libros desde la búsqueda o las recomendaciones'
-            : 'No se encontraron libros con "$_searchQuery"',
-        Icons.book_outlined,
-        theme,
+        'No hay libros en tu biblioteca',
+        'Agrega libros desde la pantalla de inicio',
+        Icons.book,
       );
     }
-
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.7,
+        physics: const BouncingScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: MediaQuery.of(context).size.width > 600 ? 4 : 2,
+          childAspectRatio: 0.6,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
         ),
         itemCount: books.length,
         itemBuilder: (context, index) {
           final book = books[index];
-          return _buildBookCard(book, theme);
+          return _buildBookCard(book, isDark);
         },
       ),
     );
   }
 
-  Widget _buildMoviesTab(AppProvider appProvider, ThemeData theme) {
-    List<SimpleMovieModel> movies = _searchQuery.isEmpty
-        ? _savedMovies
-        : _savedMovies
-              .where(
-                (movie) =>
-                    movie.title.toLowerCase().contains(
-                      _searchQuery.toLowerCase(),
-                    ) ||
-                    movie.director.toLowerCase().contains(
-                      _searchQuery.toLowerCase(),
-                    ),
-              )
-              .toList();
-
+  Widget _buildMoviesTab() {
+    final movies = _filteredMovies;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (movies.isEmpty) {
       return _buildEmptyState(
-        'No hay películas',
-        _searchQuery.isEmpty
-            ? 'Agrega películas desde la búsqueda o las recomendaciones'
-            : 'No se encontraron películas con "$_searchQuery"',
-        Icons.movie_outlined,
-        theme,
+        'No hay pelÃ­culas en tu biblioteca',
+        'Agrega pelÃ­culas desde la pantalla de inicio',
+        Icons.movie,
       );
     }
-
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.7,
+        physics: const BouncingScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: MediaQuery.of(context).size.width > 600 ? 4 : 2,
+          childAspectRatio: 0.6,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
         ),
         itemCount: movies.length,
         itemBuilder: (context, index) {
           final movie = movies[index];
-          return _buildMovieCard(movie, theme);
+          return _buildMovieCard(movie, isDark);
         },
       ),
     );
   }
 
-  Widget _buildBookCard(SimpleBookModel book, ThemeData theme) {
-    return InkWell(
+  Widget _buildSeriesTab() {
+    // Placeholder para series - se puede implementar cuando se tengan datos de series
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(
+                Icons.tv_outlined,
+                size: 60,
+                color: const Color(0xFF3B82F6),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              '¡Próximamente Series!',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.headlineMedium?.color,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Las series estarán disponibles pronto.\nMientras tanto, disfruta de nuestros libros y películas.',
+              style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).textTheme.bodyMedium?.color,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBookCard(SimpleBookModel book, bool isDark) {
+    return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => BookDetailScreen(book: book)),
         );
       },
-      borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
-          color: theme.cardTheme.color,
-          borderRadius: BorderRadius.circular(16),
+          color: isDark ? Colors.grey[850] : Colors.white,
+          borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 10,
+              color: isDark
+                  ? Colors.black26
+                  : Colors.grey.withValues(alpha: 0.3),
+              blurRadius: 8,
               offset: const Offset(0, 4),
             ),
           ],
@@ -281,40 +397,44 @@ class _LibraryScreenState extends State<LibraryScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Portada del libro
             Expanded(
               flex: 3,
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
-                  gradient: LinearGradient(
-                    colors: [
-                      theme.colorScheme.primary.withValues(alpha: 0.7),
-                      theme.colorScheme.secondary.withValues(alpha: 0.7),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                    top: Radius.circular(15),
                   ),
                 ),
-                child: Icon(Icons.book, size: 40, color: Colors.white),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(15),
+                  ),
+                  child: book.imageUrl.isNotEmpty
+                      ? Image.network(
+                          book.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildDefaultBookCover(book.title);
+                          },
+                        )
+                      : _buildDefaultBookCover(book.title),
+                ),
               ),
             ),
-
-            // Información del libro
             Expanded(
               flex: 2,
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       book.title,
-                      style: theme.textTheme.titleSmall?.copyWith(
+                      style: TextStyle(
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : Colors.black87,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -322,10 +442,9 @@ class _LibraryScreenState extends State<LibraryScreen>
                     const SizedBox(height: 4),
                     Text(
                       book.author,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.7,
-                        ),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.grey[400] : Colors.grey[600],
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -337,14 +456,15 @@ class _LibraryScreenState extends State<LibraryScreen>
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        color: const Color(0xFF3B82F6),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         book.genre,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w500,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -358,8 +478,8 @@ class _LibraryScreenState extends State<LibraryScreen>
     );
   }
 
-  Widget _buildMovieCard(SimpleMovieModel movie, ThemeData theme) {
-    return InkWell(
+  Widget _buildMovieCard(SimpleMovieModel movie, bool isDark) {
+    return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
@@ -368,15 +488,16 @@ class _LibraryScreenState extends State<LibraryScreen>
           ),
         );
       },
-      borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
-          color: theme.cardTheme.color,
-          borderRadius: BorderRadius.circular(16),
+          color: isDark ? Colors.grey[850] : Colors.white,
+          borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 10,
+              color: isDark
+                  ? Colors.black26
+                  : Colors.grey.withValues(alpha: 0.3),
+              blurRadius: 8,
               offset: const Offset(0, 4),
             ),
           ],
@@ -384,40 +505,44 @@ class _LibraryScreenState extends State<LibraryScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Póster de la película
             Expanded(
               flex: 3,
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.red.withValues(alpha: 0.7),
-                      Colors.purple.withValues(alpha: 0.7),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                    top: Radius.circular(15),
                   ),
                 ),
-                child: Icon(Icons.movie, size: 40, color: Colors.white),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(15),
+                  ),
+                  child: movie.imageUrl.isNotEmpty
+                      ? Image.network(
+                          movie.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildDefaultMovieCover(movie.title);
+                          },
+                        )
+                      : _buildDefaultMovieCover(movie.title),
+                ),
               ),
             ),
-
-            // Información de la película
             Expanded(
               flex: 2,
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       movie.title,
-                      style: theme.textTheme.titleSmall?.copyWith(
+                      style: TextStyle(
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : Colors.black87,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -425,45 +550,31 @@ class _LibraryScreenState extends State<LibraryScreen>
                     const SizedBox(height: 4),
                     Text(
                       movie.director,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.7,
-                        ),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.grey[400] : Colors.grey[600],
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            movie.genre,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.red,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3B82F6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        movie.genre,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
-                        Text(
-                          movie.year.toString(),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.6,
-                            ),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
@@ -475,44 +586,146 @@ class _LibraryScreenState extends State<LibraryScreen>
     );
   }
 
-  Widget _buildEmptyState(
-    String title,
-    String message,
-    IconData icon,
-    ThemeData theme,
-  ) {
+  Widget _buildEmptyState(String title, String subtitle, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                  const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(icon, size: 64, color: const Color(0xFF3B82F6)),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 16,
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDefaultBookCover(String title) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF48c6ef), Color(0xFF6f86d6)],
+        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+      ),
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 80,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              title,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
+            const Icon(Icons.book, size: 48, color: Colors.white),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                height: 1.4,
-              ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildDefaultMovieCover(String title) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF48c6ef), Color(0xFF6f86d6)],
+        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.movie, size: 48, color: Colors.white),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+  final bool isDark;
+  _TabBarDelegate(this.tabBar, this.isDark);
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: isDark ? Colors.black : Colors.white,
+      child: tabBar,
+    );
+  }
+
+  @override
+  double get maxExtent => 48.0;
+  @override
+  double get minExtent => 48.0;
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
+    return false;
   }
 }

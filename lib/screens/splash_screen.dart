@@ -53,16 +53,33 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF1565C0), // Blue background
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: Center(
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: isDarkMode
+                  ? [
+                      theme.scaffoldBackgroundColor,
+                      theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
+                    ]
+                  : [Colors.white, Colors.grey.shade50],
+            ),
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(),
 
-              // Logo Animation
+              // Logo Animation - Diseño unificado sin círculo azul
               AnimatedBuilder(
                 animation: _logoAnimation,
                 builder: (context, child) {
@@ -72,19 +89,19 @@ class _SplashScreenState extends State<SplashScreen>
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: isDarkMode ? Colors.grey[800] : Colors.white,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.movie,
-                        color: Color(0xFF1565C0),
+                      child: Icon(
+                        Icons.movie_outlined,
+                        color: Colors.blue,
                         size: 60,
                       ),
                     ),
@@ -94,7 +111,7 @@ class _SplashScreenState extends State<SplashScreen>
 
               const SizedBox(height: 32),
 
-              // Title and Subtitle Animation
+              // Title and Subtitle Animation - Colores unificados
               AnimatedBuilder(
                 animation: _textAnimation,
                 builder: (context, child) {
@@ -105,12 +122,12 @@ class _SplashScreenState extends State<SplashScreen>
                       child: Column(
                         children: [
                           // BookFlix Title
-                          const Text(
+                          Text(
                             'BOOKFLIX',
                             style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: theme.textTheme.headlineLarge?.color,
                               letterSpacing: 2,
                             ),
                           ),
@@ -118,12 +135,13 @@ class _SplashScreenState extends State<SplashScreen>
                           const SizedBox(height: 16),
 
                           // Subtitle
-                          const Text(
+                          Text(
                             'Tu entretenimiento digital',
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w300,
+                              color: theme.textTheme.bodyMedium?.color
+                                  ?.withValues(alpha: 0.7),
+                              fontWeight: FontWeight.w400,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -135,6 +153,29 @@ class _SplashScreenState extends State<SplashScreen>
               ),
 
               const Spacer(),
+
+              // Loading indicator unificado
+              AnimatedBuilder(
+                animation: _textAnimation,
+                builder: (context, child) {
+                  return Opacity(
+                    opacity: _textAnimation.value,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 40),
+                      child: SizedBox(
+                        width: 30,
+                        height: 30,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.blue,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),

@@ -317,7 +317,7 @@ class _FloatingMenuState extends State<FloatingMenu>
 
           _buildMenuItem(
             icon: Icons.qr_code_scanner_rounded,
-            color: Colors.orange,
+            color: const Color(0xFF3B82F6),
             tooltip: 'Escanear',
             angle: 0, // Derecha
             onTap: () => _onMenuItemTap('scan'),

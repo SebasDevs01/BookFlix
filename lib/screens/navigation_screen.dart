@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import 'library/library_screen.dart';
-import 'home/new_home_screen.dart' as new_home;
+import 'home/home_screen.dart';
 import 'favorites/favorites_screen.dart';
 import 'search/book_search_screen.dart';
 import 'search/movie_search_screen.dart';
@@ -18,13 +18,11 @@ class NavigationScreen extends StatefulWidget {
 class _NavigationScreenState extends State<NavigationScreen>
     with TickerProviderStateMixin {
   late PageController _pageController;
-  late AnimationController _fabAnimationController;
-  late Animation<double> _fabAnimation;
   bool _showFloatingOptions = false;
 
   final List<Widget> _screens = [
     const LibraryScreen(),
-    const new_home.HomeScreen(),
+    const HomeScreen(),
     const FavoritesScreen(),
   ];
 
@@ -32,28 +30,11 @@ class _NavigationScreenState extends State<NavigationScreen>
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 1);
-
-    _fabAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-
-    _fabAnimation = CurvedAnimation(
-      parent: _fabAnimationController,
-      curve: Curves.easeInOut,
-    );
-
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        _fabAnimationController.forward();
-      }
-    });
   }
 
   @override
   void dispose() {
     _pageController.dispose();
-    _fabAnimationController.dispose();
     super.dispose();
   }
 
@@ -161,87 +142,122 @@ class _NavigationScreenState extends State<NavigationScreen>
               );
             },
           ),
-          floatingActionButton: Stack(
-            alignment: Alignment.bottomRight,
-            children: [
-              if (_showFloatingOptions) ...[
-                Positioned(
-                  bottom: 75,
-                  right: 8,
-                  child: ScaleTransition(
-                    scale: _fabAnimation,
-                    child: SizedBox(
-                      width: 64,
-                      height: 64,
-                      child: FloatingActionButton(
-                        heroTag: "books",
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        onPressed: () => _handleOptionTap('books'),
-                        child: const Icon(Icons.book, size: 30),
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 145,
-                  right: 8,
-                  child: ScaleTransition(
-                    scale: _fabAnimation,
-                    child: SizedBox(
-                      width: 64,
-                      height: 64,
-                      child: FloatingActionButton(
-                        heroTag: "movies",
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        onPressed: () => _handleOptionTap('movies'),
-                        child: const Icon(Icons.movie, size: 30),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-              ScaleTransition(
-                scale: _fabAnimation,
-                child: SizedBox(
-                  width: 64,
-                  height: 64,
-                  child: FloatingActionButton(
-                    heroTag: "main",
-                    backgroundColor: theme.primaryColor,
-                    foregroundColor: Colors.white,
-                    onPressed: _toggleFloatingOptions,
-                    child: Icon(
-                      _showFloatingOptions ? Icons.close : Icons.add,
-                      size: 32,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
         ),
+        // Overlay que cubre TODA la pantalla cuando se muestran los botones flotantes
         if (_showFloatingOptions)
           Positioned.fill(
-            child: IgnorePointer(
-              ignoring: false,
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _showFloatingOptions = false;
-                  });
-                },
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-                    child: Container(color: Colors.transparent),
-                  ),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _showFloatingOptions = false;
+                });
+              },
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.5),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: Container(color: Colors.transparent),
                 ),
               ),
             ),
           ),
+        // BOTONES FLOTANTES POR ENCIMA DEL OVERLAY
+        if (_showFloatingOptions) ...[
+          // Botón para Libros (mejor separación y alineación)
+          Positioned(
+            bottom: 155, // Más separado del botón principal
+            right: 16, // Centrado perfecto
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.blue,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(28),
+                  onTap: () {
+                    _handleOptionTap('books');
+                  },
+                  child: const Icon(Icons.book, color: Colors.white, size: 28),
+                ),
+              ),
+            ),
+          ),
+          // Botón para Películas (mejor separación y alineación)
+          Positioned(
+            bottom: 230, // Más separado del botón de libros
+            right: 16, // Centrado perfecto
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(28),
+                  onTap: () {
+                    _handleOptionTap('movies');
+                  },
+                  child: const Icon(Icons.movie, color: Colors.white, size: 28),
+                ),
+              ),
+            ),
+          ),
+        ],
+        // Botón principal en posición fija (SUBIDO PARA NO TAPAR FAVORITOS)
+        Positioned(
+          bottom: 80, // Subido de 16 a 80 para estar arriba del menú
+          right: 16, // Centrado perfecto
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: _showFloatingOptions
+                  ? Colors.grey[600]
+                  : theme.primaryColor,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(28),
+                onTap: _toggleFloatingOptions,
+                child: Icon(
+                  _showFloatingOptions ? Icons.close : Icons.add,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }

@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_provider.dart';
+import '../../data/hardcoded_data.dart';
+import '../../models/simple_book_model.dart';
+import '../../models/simple_movie_model.dart';
+import '../../models/simple_series_model.dart';
+import '../details/book_detail_screen.dart';
+import '../details/movie_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,75 +26,135 @@ class _HomeScreenState extends State<HomeScreen>
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Consumer<AppProvider>(
         builder: (context, appProvider, child) {
-          return CustomScrollView(
-            slivers: [
-              // App Bar
-              SliverAppBar(
-                expandedHeight: 120,
-                pinned: true,
-                backgroundColor: theme.colorScheme.surface,
-                elevation: 0,
-                flexibleSpace: FlexibleSpaceBar(
-                  title: Text(
-                    'BookFlix',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  centerTitle: false,
-                  titlePadding: const EdgeInsets.only(left: 24, bottom: 16),
-                ),
-                actions: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.search,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/search');
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      appProvider.isDarkMode
-                          ? Icons.light_mode
-                          : Icons.dark_mode,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    onPressed: appProvider.toggleDarkMode,
-                  ),
-                  const SizedBox(width: 8),
-                ],
-              ),
+          final screenWidth = MediaQuery.of(context).size.width;
+          final isLargeScreen = screenWidth >= 800;
 
-              // Contenido principal
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
+          return Column(
+            children: [
+              // Header unificado como biblioteca
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isLargeScreen ? 40 : 20,
+                  vertical: isLargeScreen ? 30 : 20,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _getGreeting(),
+                            style: TextStyle(
+                              fontSize: isLargeScreen ? 16 : 14,
+                              fontWeight: FontWeight.w400,
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodyMedium?.color,
+                            ),
+                          ),
+                          Text(
+                            appProvider.currentUser?.displayName ?? 'Usuario',
+                            style: TextStyle(
+                              fontSize: isLargeScreen ? 28 : 20,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(
+                                context,
+                              ).textTheme.headlineMedium?.color,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              appProvider.isDarkMode
+                                  ? Icons.light_mode_outlined
+                                  : Icons.dark_mode_outlined,
+                              size: isLargeScreen ? 28 : 24,
+                              color: Theme.of(context).iconTheme.color,
+                            ),
+                            onPressed: () {
+                              appProvider.toggleDarkMode();
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pushNamed(context, '/profile');
+                            },
+                            child: Container(
+                              width: isLargeScreen ? 45 : 40,
+                              height: isLargeScreen ? 45 : 40,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: const Color(0xFF3B82F6),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Contenido con scroll
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isLargeScreen ? 40 : 20,
+                    vertical: isLargeScreen ? 30 : 20,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Saludo personalizado
-                      _buildGreetingSection(appProvider, theme),
+                      // Progreso de lectura
+                      _buildProgressSection(appProvider, isLargeScreen),
                       const SizedBox(height: 32),
 
-                      // Estadísticas rápidas
-                      _buildStatsSection(appProvider, theme),
+                      // Continuar leyendo
+                      _buildContinueReadingSection(appProvider, isLargeScreen),
                       const SizedBox(height: 32),
 
-                      // Géneros favoritos
-                      if (appProvider.selectedGenres.isNotEmpty) ...[
-                        _buildGenresSection(appProvider, theme),
-                        const SizedBox(height: 32),
-                      ],
+                      // Recomendaciones
+                      _buildRecommendationsSection(isLargeScreen),
+                      const SizedBox(height: 32),
 
-                      // Actividad reciente
-                      _buildRecentActivity(appProvider, theme),
-                      const SizedBox(height: 100), // Espacio para el FAB
+                      // Nuevos lanzamientos
+                      _buildNewReleasesSection(isLargeScreen),
+                      const SizedBox(height: 32),
+
+                      // Tendencias
+                      _buildTrendingSection(isLargeScreen),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
@@ -100,169 +166,101 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildGreetingSection(AppProvider appProvider, ThemeData theme) {
-    final timeOfDay = DateTime.now().hour;
-    String greeting;
-    IconData greetingIcon;
-
-    if (timeOfDay < 12) {
-      greeting = 'Buenos días';
-      greetingIcon = Icons.wb_sunny;
-    } else if (timeOfDay < 18) {
-      greeting = 'Buenas tardes';
-      greetingIcon = Icons.wb_sunny_outlined;
-    } else {
-      greeting = 'Buenas noches';
-      greetingIcon = Icons.nightlight_round;
-    }
-
+  Widget _buildProgressSection(AppProvider provider, bool isLargeScreen) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isLargeScreen ? 24 : 20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.colorScheme.primary.withValues(alpha: 0.8),
-            theme.colorScheme.primary,
-          ],
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          colors: [Color(0xFF3B82F6), Color(0xFF3B82F6)],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.primary.withValues(alpha: 0.3),
+            color: Colors.grey.withValues(alpha: 0.2),
             blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Icon(greetingIcon, color: Colors.white, size: 32),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  greeting,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  appProvider.currentUser?.displayName ?? 'Usuario',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (appProvider.currentUser?.photoUrl != null)
-            CircleAvatar(
-              radius: 25,
-              backgroundImage: NetworkImage(appProvider.currentUser!.photoUrl!),
-              backgroundColor: Colors.white.withValues(alpha: 0.2),
-            )
-          else
-            CircleAvatar(
-              radius: 25,
-              backgroundColor: Colors.white.withValues(alpha: 0.2),
-              child: Icon(Icons.person, color: Colors.white, size: 30),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsSection(AppProvider appProvider, ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Tu progreso',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                'Libros leídos',
-                appProvider.totalBooksRead.toString(),
-                Icons.book,
-                theme.colorScheme.primary,
-                theme,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildStatCard(
-                'Películas vistas',
-                appProvider.totalMoviesWatched.toString(),
-                Icons.movie,
-                theme.colorScheme.secondary,
-                theme,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-    ThemeData theme,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+          const Text(
+            'Tu progreso hoy',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
             ),
-            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildProgressCard(
+                  'Libros leídos',
+                  '3',
+                  Icons.book_outlined,
+                  isLargeScreen,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildProgressCard(
+                  'Películas vistas',
+                  '1',
+                  Icons.movie_outlined,
+                  isLargeScreen,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildProgressCard(
+                  'Series vistas',
+                  '2',
+                  Icons.tv_outlined,
+                  isLargeScreen,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressCard(
+    String title,
+    String count,
+    IconData icon,
+    bool isLargeScreen,
+  ) {
+    return Container(
+      padding: EdgeInsets.all(isLargeScreen ? 16 : 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Colors.white, size: isLargeScreen ? 28 : 24),
+          const SizedBox(height: 8),
           Text(
-            value,
-            style: theme.textTheme.headlineLarge?.copyWith(
+            count,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: isLargeScreen ? 24 : 20,
               fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 4),
           Text(
             title,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: isLargeScreen ? 14 : 12,
             ),
           ),
         ],
@@ -270,43 +268,38 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildGenresSection(AppProvider appProvider, ThemeData theme) {
+  Widget _buildContinueReadingSection(
+    AppProvider provider,
+    bool isLargeScreen,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Tus géneros favoritos',
-          style: theme.textTheme.headlineSmall?.copyWith(
+          'Continúa donde lo dejaste',
+          style: TextStyle(
+            fontSize: isLargeScreen ? 22 : 18,
             fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
+            color: Theme.of(context).textTheme.headlineMedium?.color,
           ),
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 40,
+          height: isLargeScreen ? 280 : 220,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: appProvider.selectedGenres.length,
+            itemCount: 3,
             itemBuilder: (context, index) {
-              final genre = appProvider.selectedGenres[index];
-              return Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    genre,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+              final book = HardcodedData.books[index];
+              return Container(
+                width: isLargeScreen ? 160 : 140,
+                margin: const EdgeInsets.only(right: 16),
+                child: _buildContentCard(
+                  book.title,
+                  book.author,
+                  book.imageUrl,
+                  isLargeScreen,
+                  onTap: () => _navigateToBookDetail(book),
                 ),
               );
             },
@@ -316,123 +309,315 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildRecentActivity(AppProvider appProvider, ThemeData theme) {
-    final recentBooks = appProvider.books.take(3).toList();
-    final recentMovies = appProvider.movies.take(3).toList();
+  Widget _buildRecommendationsSection(bool isLargeScreen) {
+    return Consumer<AppProvider>(
+      builder: (context, provider, child) {
+        // Obtener recomendaciones basadas en géneros seleccionados
+        final recommendedBooks = provider
+            .getRecommendationsByGenre<SimpleBookModel>(
+              HardcodedData.books,
+              (book) => book.genre,
+              limit: 5,
+            );
+        final recommendedMovies = provider
+            .getRecommendationsByGenre<SimpleMovieModel>(
+              HardcodedData.movies,
+              (movie) => movie.genre,
+              limit: 5,
+            );
+        final recommendedSeries = provider
+            .getRecommendationsByGenre<SimpleSeriesModel>(
+              HardcodedData.series,
+              (series) => series.genre,
+              limit: 5,
+            );
 
-    if (recentBooks.isEmpty && recentMovies.isEmpty) {
-      return _buildEmptyState(theme);
-    }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              provider.selectedGenres.isNotEmpty
+                  ? 'Recomendaciones basadas en tus gustos'
+                  : 'Recomendaciones para ti',
+              style: TextStyle(
+                fontSize: isLargeScreen ? 22 : 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.headlineMedium?.color,
+              ),
+            ),
+            if (provider.selectedGenres.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: provider.selectedGenres
+                    .map(
+                      (genre) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3B82F6).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          genre,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF3B82F6),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+            const SizedBox(height: 16),
 
+            // Libros recomendados
+            if (recommendedBooks.isNotEmpty) ...[
+              Text(
+                'Libros recomendados',
+                style: TextStyle(
+                  fontSize: isLargeScreen ? 18 : 16,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).textTheme.titleMedium?.color,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: isLargeScreen ? 280 : 220,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: recommendedBooks.length,
+                  itemBuilder: (context, index) {
+                    final book = recommendedBooks[index];
+                    return Container(
+                      width: isLargeScreen ? 160 : 140,
+                      margin: const EdgeInsets.only(right: 16),
+                      child: _buildContentCard(
+                        book.title,
+                        book.author,
+                        book.imageUrl,
+                        isLargeScreen,
+                        onTap: () => _navigateToBookDetail(book),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            // Películas recomendadas
+            if (recommendedMovies.isNotEmpty) ...[
+              Text(
+                'Películas recomendadas',
+                style: TextStyle(
+                  fontSize: isLargeScreen ? 18 : 16,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).textTheme.titleMedium?.color,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: isLargeScreen ? 280 : 220,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: recommendedMovies.length,
+                  itemBuilder: (context, index) {
+                    final movie = recommendedMovies[index];
+                    return Container(
+                      width: isLargeScreen ? 160 : 140,
+                      margin: const EdgeInsets.only(right: 16),
+                      child: _buildContentCard(
+                        movie.title,
+                        movie.director,
+                        movie.imageUrl,
+                        isLargeScreen,
+                        onTap: () => _navigateToMovieDetail(movie),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            // Series recomendadas
+            if (recommendedSeries.isNotEmpty) ...[
+              Text(
+                'Series recomendadas',
+                style: TextStyle(
+                  fontSize: isLargeScreen ? 18 : 16,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).textTheme.titleMedium?.color,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: isLargeScreen ? 280 : 220,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: recommendedSeries.length,
+                  itemBuilder: (context, index) {
+                    final series = recommendedSeries[index];
+                    return Container(
+                      width: isLargeScreen ? 160 : 140,
+                      margin: const EdgeInsets.only(right: 16),
+                      child: _buildSeriesCard(series, isLargeScreen),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildNewReleasesSection(bool isLargeScreen) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Actividad reciente',
-          style: theme.textTheme.headlineSmall?.copyWith(
+          'Nuevos lanzamientos',
+          style: TextStyle(
+            fontSize: isLargeScreen ? 22 : 18,
             fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
+            color: Theme.of(context).textTheme.headlineMedium?.color,
           ),
         ),
         const SizedBox(height: 16),
-
-        if (recentBooks.isNotEmpty) ...[
-          Text(
-            'Últimos libros',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.onSurface,
-            ),
+        SizedBox(
+          height: isLargeScreen ? 280 : 220,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: HardcodedData.movies.length,
+            itemBuilder: (context, index) {
+              final movie = HardcodedData.movies[index];
+              return Container(
+                width: isLargeScreen ? 160 : 140,
+                margin: const EdgeInsets.only(right: 16),
+                child: _buildContentCard(
+                  movie.title,
+                  movie.director,
+                  movie.imageUrl,
+                  isLargeScreen,
+                  onTap: () => _navigateToMovieDetail(movie),
+                ),
+              );
+            },
           ),
-          const SizedBox(height: 8),
-          ...recentBooks.map(
-            (book) => _buildRecentItem(
-              book.title,
-              book.author,
-              Icons.book,
-              theme.colorScheme.primary,
-              book.formattedDate,
-              theme,
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-
-        if (recentMovies.isNotEmpty) ...[
-          Text(
-            'Últimas películas',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ...recentMovies.map(
-            (movie) => _buildRecentItem(
-              movie.title,
-              movie.director,
-              Icons.movie,
-              theme.colorScheme.secondary,
-              movie.formattedDate,
-              theme,
-            ),
-          ),
-        ],
+        ),
       ],
     );
   }
 
-  Widget _buildRecentItem(
+  Widget _buildTrendingSection(bool isLargeScreen) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Tendencias',
+          style: TextStyle(
+            fontSize: isLargeScreen ? 22 : 18,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.headlineMedium?.color,
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: isLargeScreen ? 280 : 220,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: HardcodedData.books.length,
+            itemBuilder: (context, index) {
+              final book = HardcodedData.books[index];
+              return Container(
+                width: isLargeScreen ? 160 : 140,
+                margin: const EdgeInsets.only(right: 16),
+                child: _buildContentCard(
+                  book.title,
+                  book.author,
+                  book.imageUrl,
+                  isLargeScreen,
+                  onTap: () => _navigateToBookDetail(book),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContentCard(
     String title,
     String subtitle,
-    IconData icon,
-    Color color,
-    String date,
-    ThemeData theme,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
+    String imageUrl,
+    bool isLargeScreen, {
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
+          // Imagen con mejor aspect ratio
           Expanded(
+            flex: 3,
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: imageUrl.isNotEmpty
+                    ? Image.asset(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildDefaultCover();
+                        },
+                      )
+                    : _buildDefaultCover(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Información
+          Expanded(
+            flex: 1,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: theme.textTheme.titleSmall?.copyWith(
+                  style: TextStyle(
+                    fontSize: isLargeScreen ? 14 : 12,
                     fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
                   ),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                  style: TextStyle(
+                    fontSize: isLargeScreen ? 12 : 10,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -440,51 +625,171 @@ class _HomeScreenState extends State<HomeScreen>
               ],
             ),
           ),
-          Text(
-            date,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState(ThemeData theme) {
+  Widget _buildDefaultCover() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF48c6ef), Color(0xFF6f86d6)],
+        ),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.auto_stories_outlined,
-            size: 64,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+      child: const Center(
+        child: Icon(Icons.image_outlined, color: Colors.white, size: 40),
+      ),
+    );
+  }
+
+  void _navigateToBookDetail(SimpleBookModel book) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => BookDetailScreen(book: book)),
+    );
+  }
+
+  void _navigateToMovieDetail(SimpleMovieModel movie) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => MovieDetailScreen(movie: movie)),
+    );
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Buenos días';
+    } else if (hour < 18) {
+      return 'Buenas tardes';
+    } else {
+      return 'Buenas noches';
+    }
+  }
+
+  Widget _buildSeriesCard(SimpleSeriesModel series, bool isLargeScreen) {
+    return GestureDetector(
+      onTap: () {
+        // TODO: Navegar a pantalla de detalles de series cuando se implemente
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Detalles de series próximamente'),
+            backgroundColor: Color(0xFF3B82F6),
           ),
-          const SizedBox(height: 16),
-          Text(
-            '¡Comienza tu colección!',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
             ),
-            textAlign: TextAlign.center,
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                height: double.infinity,
+                child: series.imageUrl.isNotEmpty
+                    ? Image.network(
+                        series.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildDefaultSeriesCover(series.title);
+                        },
+                      )
+                    : _buildDefaultSeriesCover(series.title),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.7),
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        series.title,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        series.genre,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.white70,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Agrega tu primer libro o película usando el botón flotante',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              height: 1.4,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDefaultSeriesCover(String title) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF48c6ef), Color(0xFF6f86d6)],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.tv, size: 48, color: Colors.white),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

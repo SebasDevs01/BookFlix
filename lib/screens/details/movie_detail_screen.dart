@@ -47,7 +47,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen>
         content: Text(
           _isFavorite ? 'Añadido a favoritos' : 'Removido de favoritos',
         ),
-        backgroundColor: _isFavorite ? Colors.green : Colors.orange,
+        backgroundColor: _isFavorite ? Colors.green : const Color(0xFF3B82F6),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -65,7 +65,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen>
               ? 'Añadido a la biblioteca'
               : 'Removido de la biblioteca',
         ),
-        backgroundColor: _isInLibrary ? Colors.blue : Colors.orange,
+        backgroundColor: _isInLibrary ? Colors.green : const Color(0xFF3B82F6),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -301,7 +301,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen>
         children: [
           Row(
             children: [
-              Icon(Icons.star, color: Colors.amber, size: isTablet ? 24 : 20),
+              Icon(
+                Icons.star,
+                color: const Color(0xFF3B82F6),
+                size: isTablet ? 24 : 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 '4.7',
@@ -565,7 +569,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen>
                           index < review['rating']
                               ? Icons.star
                               : Icons.star_border,
-                          color: Colors.amber,
+                          color: const Color(0xFF3B82F6),
                           size: 16,
                         );
                       }),

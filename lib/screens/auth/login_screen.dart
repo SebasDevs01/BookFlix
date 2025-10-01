@@ -37,72 +37,65 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(height: size.height * 0.1),
+              SizedBox(height: size.height * 0.08),
 
-              // Logo
+              // Header unificado con icono limpio
               Container(
-                width: isTablet ? 120 : 100,
-                height: isTablet ? 120 : 100,
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isTablet ? 30 : 20,
+                  vertical: isTablet ? 25 : 20,
+                ),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
+                  color: theme.scaffoldBackgroundColor,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    // Ícono BookFlix
+                    Container(
+                      width: isTablet ? 80 : 60,
+                      height: isTablet ? 80 : 60,
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.movie_outlined,
+                        color: Colors.blue,
+                        size: isTablet ? 40 : 30,
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Welcome Text
+                    Text(
+                      'Bienvenido a BookFlix',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.textTheme.headlineMedium?.color,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    Text(
+                      'Tu biblioteca digital de libros y películas',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w400,
+                        color: theme.textTheme.bodyLarge?.color?.withValues(
+                          alpha: 0.7,
+                        ),
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image.asset(
-                    'assets/logos/image.png',
-                    width: isTablet ? 120 : 100,
-                    height: isTablet ? 120 : 100,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      width: isTablet ? 120 : 100,
-                      height: isTablet ? 120 : 100,
-                      decoration: BoxDecoration(
-                        color: theme.primaryColor,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Icon(
-                        Icons.movie,
-                        color: Colors.white,
-                        size: isTablet ? 60 : 40,
-                      ),
-                    ),
-                  ),
-                ),
               ),
 
-              const SizedBox(height: 32),
-
-              // Welcome Text
-              Text(
-                'Bienvenido a BookFlix',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.primaryColor,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 8),
-
-              Text(
-                'Tu biblioteca digital de libros y películas',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: theme.textTheme.bodyLarge?.color?.withValues(
-                    alpha: 0.7,
-                  ),
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 48),
+              const SizedBox(height: 40),
 
               // Email Field
               TextFormField(
@@ -150,19 +143,32 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 24),
 
-              // Login Button
-              SizedBox(
+              // Login Button con gradiente unificado
+              Container(
                 width: double.infinity,
                 height: 56,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Colors.blue, Color(0xFF1565C0)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _handleLogin,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.primaryColor,
+                    backgroundColor: Colors.transparent,
                     foregroundColor: Colors.white,
+                    shadowColor: Colors.transparent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 2,
                   ),
                   child: _isLoading
                       ? const SizedBox(
