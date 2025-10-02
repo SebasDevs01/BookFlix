@@ -14,7 +14,7 @@ import 'screens/profile/profile_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
+  // Inicializar Firebase
   try {
     await Firebase.initializeApp(
       options: const FirebaseOptions(
@@ -50,14 +50,10 @@ class BookFlixApp extends StatelessWidget {
             themeMode: provider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             home: const SplashScreen(),
             builder: (context, child) {
-              // Asegurar que la app esté optimizada para móvil
+              final mediaQuery = MediaQuery.of(context);
               return MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: TextScaler.linear(
-                    MediaQuery.of(
-                      context,
-                    ).textScaler.scale(1.0).clamp(0.8, 1.2),
-                  ),
+                data: mediaQuery.copyWith(
+                  textScaler: const TextScaler.linear(1.0),
                 ),
                 child: child!,
               );
